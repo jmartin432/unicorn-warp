@@ -126,7 +126,6 @@ class ControlBoard extends React.Component {
 
     dropMenu(event) {
         let data = event.dataTransfer.getData("text/plain").split(',');
-        console.log(data)
         let menu = document.getElementById(data[0])
         menu.style.left = this.clampValue(event.pageX - parseInt(data[3]), 0, this.props.width - 200) + 'px'
         menu.style.top = this.clampValue(event.pageY - parseInt(data[4]), 0, this.props.height - 50) + 'px'
