@@ -1,19 +1,21 @@
 import Vector from './Vector'
 class Unicorn {
 
-    constructor(id, pathString, age, pos, vel, scaleFactor, speedFactor, color) {
+    constructor(id, pathString, age, position, velocity, targetVelocity, scaleFactor, speedFactor, color1, color2) {
         this._id = id;
         this._pathString = pathString;
         this._age = age;
-        this._position = pos;
-        this._velocity = vel;
+        this._position = position;
+        this._velocity = velocity;
+        this._targetVelocity = targetVelocity
         this._acceleration = new Vector(0, 0)
-        // this.acceleration = new Vector(0, 0);
-        // this.targetVel = new Vector(this.velocity.x, this.velocity.y);
         this._scaleFactor = scaleFactor;
         this._speedFactor = speedFactor;
-        this._color = color;
-        // this.neighbors = [];
+        this._color1 = color1;
+        this._color2 = color2;
+        this._alignNeighbors = [];
+        this._avoidNeighbors = [];
+        this._cohereNeighbors = []
 
     }
 
@@ -41,12 +43,44 @@ class Unicorn {
         this._velocity = velocity
     }
 
+    get targetVelocity() {
+        return this._targetVelocity
+    }
+
+    set targetVelocity(velocity) {
+        this._targetVelocity = velocity
+    }
+
     get acceleration() {
         return this._acceleration
     }
 
     set acceleration(acceleration) {
         this._acceleration = acceleration
+    }
+
+    get alignNeighbors() {
+        return this._alignNeighbors
+    }
+
+    set alignNeighbors(neighbors) {
+        this._alignNeighbors = neighbors
+    }
+
+    get avoidNeighbors() {
+        return this._avoidNeighbors
+    }
+
+    set avoidNeighbors(neighbors) {
+        this._avoidNeighbors = neighbors
+    }
+
+    get cohereNeighbors() {
+        return this._cohereNeighbors
+    }
+
+    set cohereNeighbors(neighbors) {
+        this._cohereNeighbors = neighbors
     }
 
     get scaleFactor() {
@@ -57,8 +91,12 @@ class Unicorn {
         return this._speedFactor
     }
 
-    get color() {
-        return this._color
+    get color1() {
+        return this._color1
+    }
+
+    get color2() {
+        return this._color2
     }
 
     get bearing() {
@@ -69,15 +107,8 @@ class Unicorn {
         return "translate(" + this._position.x + "," + this._position.y + ")rotate(" + this.bearing + ")scale(" + this._scaleFactor + ")";
     }
 
-    // checkBounds(xMin, xMax, yMin, yMax) {
-    //     if (this._position.x + this._velocity.x < xMin || this._position.x + this._velocity.x > xMax)
-    //         this._velocity.x *= -1
-    //     if (this._position.y + this._velocity.y < yMin || this._position.y + this._velocity.y > yMax)
-    //         this._velocity.y *= -1
-    // }
-
-    updatePosition() {
-        this._position = Vector.add(this._velocity, this._position)
+    get gradientId() {
+        return "url(#gradient" + this._id + ")"
     }
 }
 

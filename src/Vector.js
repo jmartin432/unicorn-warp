@@ -45,24 +45,31 @@ class Vector {
         return new Vector(v1.x - v2.x, v1.y - v2.y);
     }
 
-    // normalize() {
-    //     let mag = this.magnitude();
-    //     if (mag === 0) {
-    //         return;
-    //     }
-    //     return this.scale(1 / mag);
+    lengthen(length) {
+        if (this.magnitude() === 0) return new Vector(0,0)
+        return this.scaleBy(length / this.magnitude());
 
-    // }
+    }
 
-    // magnitude() {
-    //     return Math.sqrt(((this.x) * (this.x) + (this.y) * (this.y)));
-    //
-    // }
-    //
-    //
-    // static distanceSquared(v1, v2) {
-    //     return ((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
-    // }
+    magnitude() {
+        return Math.sqrt(((this.x) * (this.x) + (this.y) * (this.y)));
+
+    }
+
+    static distanceSquared(v1, v2) {
+        return ((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
+    }
+
+    static average(vectorsList) {
+        if (vectorsList.length === 0) return null
+        let x = 0;
+        let y = 0;
+        for (let i = 0; i < vectorsList.length; i++){
+            x += vectorsList[i].x
+            y += vectorsList[i].y
+        }
+        return new Vector (x / vectorsList.length, y / vectorsList.length)
+    }
     //
     // static distance(v1, v2) {
     //     return Math.sqrt(((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y)));
