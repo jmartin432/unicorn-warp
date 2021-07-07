@@ -1,0 +1,15 @@
+version: 0.1
+
+phases:
+  build:
+    commands:
+      - npm install
+      - npm run webpack
+artifacts:
+  files:
+    - public/dist/*
+    - public/index.html
+    - public/favicon.ico
+    - public/clubIcon200.png
+    - public/manifest.json
+    - public/robot.txt
