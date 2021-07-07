@@ -38,18 +38,14 @@
 }
 
 #flock-menu {
-  top: 0;
-  left: 0;
+  top: 50px;
+  left:50px;
 }
 
 input {
   display: block;
   margin: 0 auto;
 }
-
-/*p, label{*/
-/*  font-size: 10px;*/
-/*}*/
 
 #menu p {
   margin: 10px 0px 2px 0px;
