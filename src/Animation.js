@@ -7,8 +7,8 @@ class Animation extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            flockSize: 20,
-            flock: this.createUnicorns(20),
+            flockSize: 100,
+            flock: this.createUnicorns(100),
             tick: 0,
             playing: true,
             wiggle: true
@@ -48,7 +48,7 @@ class Animation extends React.Component {
                 Vector.vectorFromAngle(randomAngle).round(5),
                 new Vector(0, 0),
                 this.getRandomInt(700, 300) / 1000,
-                1,
+                this.getRandomInt(700, 300) / 1000,
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0'),
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
             ))
@@ -85,7 +85,7 @@ class Animation extends React.Component {
             if (Vector.distanceSquared(agent.position, flock[i].position) < avoidRadiusSqrd) {
                 agent.avoidNeighbors.push(flock[i])
                 let vectorToNeighbor = Vector.difference(flock[i].position, agent.position)
-                let vectorToRadius = vectorToNeighbor.lengthen(this.props.avoidanceRadius)
+                let vectorToRadius = vectorToNeighbor.copy().lengthen(this.props.avoidanceRadius)
                 let avoidVector = Vector.difference(vectorToNeighbor, vectorToRadius)
                 avoidVectors.push(avoidVector)
             }
@@ -108,6 +108,8 @@ class Animation extends React.Component {
             totalAvoidVectors = Vector.sum(avoidVectors).normalize()
         }
         let scaledAvoidVector = totalAvoidVectors.scaleBy(this.props.avoidanceWeight)
+        if(avoidVectors.length >0) {
+        }
 
         // calculate cohere vector
         let velocityToCenter = new Vector(0, 0)
@@ -119,9 +121,12 @@ class Animation extends React.Component {
 
         agent.targetVelocity = Vector.sum([scaledAlignVector, scaledAvoidVector, scaledCohereVector]).normalize().round(5)
         if (agent.targetVelocity.magnitude() <= .00000001) {
-            let wiggle = Vector.vectorFromAngle(this.getRandomInt(0, 360)).scaleBy(this.props.wiggle).round(5)
-            agent.targetVelocity = agent.velocity.copy().add(wiggle).normalize().round(5)
+            agent.targetVelocity = agent.velocity.copy().normalize().round(5)
         }
+        let wiggle = Vector.vectorFromAngle(this.getRandomInt(0, 360)).scaleBy(this.props.wiggle).round(5)
+        agent.targetVelocity.add(wiggle).normalize().round(5)
+        // scale by speed factor (Hard to tell if this is doing anything)
+        agent.targetVelocity.scaleBy(agent.speedFactor)
 
         return agent
     }
