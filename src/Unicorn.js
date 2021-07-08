@@ -1,7 +1,7 @@
 import Vector from './Vector'
 class Unicorn {
 
-    constructor(id, pathString, age, position, velocity, targetVelocity, scaleFactor, speedFactor, color1, color2) {
+    constructor(id, pathString, age, position, velocity, targetVelocity, acceleration, scaleFactor, speedFactor, color1, color2) {
         this._id = id;
         this._pathString = pathString;
         this._age = age;

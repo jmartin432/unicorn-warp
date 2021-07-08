@@ -7,10 +7,11 @@ class Animation extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            flockSize: 100,
-            flock: this.createUnicorns(100),
+            flockSize: 20,
+            flock: this.createUnicorns(20),
             tick: 0,
-            playing: true
+            playing: true,
+            wiggle: true
         }
         this.updateAnimationState = this.updateAnimationState.bind(this);
         this.handleMouse = this.handleMouse.bind(this);
@@ -30,37 +31,35 @@ class Animation extends React.Component {
         cancelAnimationFrame(this.rAF);
     }
 
-    getRandomInt(max) {
-        return Math.floor(Math.random() * max);
-    }
-
-    getVelocityFromAngle(angle) {
-        return new Vector(Math.cos(angle), Math.sin(angle))
+    getRandomInt(start,range) {
+        return Math.floor(Math.random() * range) + start;
     }
 
     createUnicorns(size) {
         let flock = []
         for (let i = 0; i < size; i++) {
-            let randomAngle = this.getRandomInt(360)
+            let randomAngle = this.getRandomInt(0,360)
             flock.push(new Unicorn(
                 i,
                 "m20,0l-20,10l-10,-10l10,-10l20,10",
                 2,
-                new Vector(this.getRandomInt(this.props.width), this.getRandomInt(this.props.height)),
-                this.getVelocityFromAngle(randomAngle),
-                this.getVelocityFromAngle(randomAngle),
-                Math.random() * .3 + .7,
+                new Vector(this.getRandomInt(0, this.props.width), this.getRandomInt(0, this.props.height)),
+                Vector.vectorFromAngle(randomAngle).round(5),
+                Vector.vectorFromAngle(randomAngle).round(5),
+                new Vector(0, 0),
+                this.getRandomInt(700, 300) / 1000,
                 1,
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0'),
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
             ))
         }
+        console.log(flock[2])
         return flock
     }
 
     async resetAgent(agent) {
-        agent.acceleration = new Vector(0,0)
-        agent.targetVelocity = new Vector(agent.velocity.x, agent.velocity.y)
+        agent.acceleration.reset()
+        agent.targetVelocity = agent.velocity.copy()
         agent.alignNeighbors = []
         agent.avoidNeighbors = []
         agent.cohereNeighbors = []
@@ -71,42 +70,58 @@ class Animation extends React.Component {
         let alignRadiusSqrd = this.props.alignmentRadius * this.props.alignmentRadius
         let avoidRadiusSqrd = this.props.avoidanceRadius * this.props.avoidanceRadius
         let cohereRadiusSqrd = this.props.cohesionRadius * this.props.cohesionRadius
-        let alignVectors = []
+        let neighborVelocities = []
         let avoidVectors = []
-        let cohereVectors = []
+        let neighborPositions = []
         for (let i = 0; i < flock.length; i++) {
             if (agent.id === i) continue
+            // get alignment vectors (these are neighbor velocities)
             if (Vector.distanceSquared(agent.position, flock[i].position) < alignRadiusSqrd) {
                 agent.alignNeighbors.push(flock[i])
-                alignVectors.push(flock[i].velocity)
+                neighborVelocities.push(flock[i].velocity)
             }
+
+            // get avoid vectors (the difference between avoid radius and neighbor position)
             if (Vector.distanceSquared(agent.position, flock[i].position) < avoidRadiusSqrd) {
                 agent.avoidNeighbors.push(flock[i])
                 let vectorToNeighbor = Vector.difference(flock[i].position, agent.position)
-
-            //    ???????
-                avoidVectors.push(Vector.difference(vectorToNeighbor, vectorToNeighbor.lengthen(this.props.avoidanceRadius)))
+                let vectorToRadius = vectorToNeighbor.lengthen(this.props.avoidanceRadius)
+                let avoidVector = Vector.difference(vectorToNeighbor, vectorToRadius)
+                avoidVectors.push(avoidVector)
             }
+            // get cohere vectors (these are neighbor positions)
             if (Vector.distanceSquared(agent.position, flock[i].position) < cohereRadiusSqrd) {
                 agent.cohereNeighbors.push(flock[i])
-                //  get velocity should be the vector to the center not the cnter itself
-                cohereVectors.push(flock[i].position)
+                neighborPositions.push(flock[i].position)
             }
         }
-        let alignVector = (alignVectors.length !== 0) ? Vector.average(alignVectors) : null
-        // ?????
-        let avoidVector = (avoidVectors.length !== 0) ? Vector.average(avoidVectors) : null
-        // ????
-        let cohereVector = (cohereVectors.length !== 0)
-            ? Vector.difference(Vector.average(cohereVectors), agent.position)
-            : null
 
-        let scaledAlignVector = (alignVector) ? alignVector.scaleBy(this.props.alignmentWeight) : null
-        let scaledAvoidVector = (avoidVector) ? avoidVector.scaleBy(this.props.avoidanceWeight) : null
-        let scaledCohereVector = (cohereVector) ? cohereVector.scaleBy(this.props.cohesionWeight) : null
+        // calculate align vector
+        let averageNeighborVelocity = new Vector(0, 0)
+        if (neighborVelocities.length !== 0)
+            averageNeighborVelocity = Vector.average(neighborVelocities).normalize();
+        let scaledAlignVector = averageNeighborVelocity.scaleBy(this.props.alignmentWeight)
 
-        let nonNullVectors = [scaledAlignVector, scaledAvoidVector, scaledCohereVector].filter(Boolean)
-        if (nonNullVectors.length > 0) agent.targetVelocity = Vector.average(nonNullVectors)
+        // calculate avoid Vector
+        let totalAvoidVectors = new Vector (0, 0)
+        if (avoidVectors.length !== 0) {
+            totalAvoidVectors = Vector.sum(avoidVectors).normalize()
+        }
+        let scaledAvoidVector = totalAvoidVectors.scaleBy(this.props.avoidanceWeight)
+
+        // calculate cohere vector
+        let velocityToCenter = new Vector(0, 0)
+        if (neighborPositions.length !== 0) {
+            let neighborsCenter = Vector.average(neighborPositions)
+            velocityToCenter = Vector.difference(neighborsCenter, agent.position).normalize()
+        }
+        let scaledCohereVector = (velocityToCenter) ? velocityToCenter.scaleBy(this.props.cohesionWeight) : null
+
+        agent.targetVelocity = Vector.sum([scaledAlignVector, scaledAvoidVector, scaledCohereVector]).normalize().round(5)
+        if (agent.targetVelocity.magnitude() <= .00000001) {
+            let wiggle = Vector.vectorFromAngle(this.getRandomInt(0, 360)).scaleBy(this.props.wiggle).round(5)
+            agent.targetVelocity = agent.velocity.copy().add(wiggle).normalize().round(5)
+        }
 
         return agent
     }
@@ -120,19 +135,17 @@ class Animation extends React.Component {
     }
 
     async updateAcceleration(agent) {
-        if (!agent.targetVelocity.equals(agent.velocity)) {
-            agent.acceleration = Vector.difference(agent.targetVelocity, agent.velocity).scaleBy(.1)
-        }
+        agent.acceleration = Vector.difference(agent.targetVelocity, agent.velocity).scaleBy(.1).round(5)
         return agent
     }
 
     async updateVelocity(agent) {
-        agent.velocity = Vector.add(agent.velocity, agent.acceleration)
+        agent.velocity.add(agent.acceleration).round(5)
         return agent
     }
 
     async updatePosition(agent) {
-        agent.position = Vector.add(agent.position, agent.velocity)
+        agent.position.add(agent.velocity).round(5)
         return agent
     }
 
@@ -145,9 +158,17 @@ class Animation extends React.Component {
                 .then (agent => this.updateAcceleration(agent))
                 .then (agent => this.updateVelocity(agent))
                 .then (agent => this.updatePosition(agent))
+                .catch(error => {
+                    console.log(error)
+                    console.log('error agent:', flock[i])
+                })
             } else {
                 flock[i] = await this.updateVelocity(flock[i])
                 .then((agent) => this.updatePosition(agent))
+                .catch(error => {
+                    console.log(error)
+                    console.log('error agent:', flock[i])
+                })
             }
         }
         return flock
@@ -176,11 +197,13 @@ class Animation extends React.Component {
 
     handleMouse(event) {
         let playing = this.state.playing
-        if (playing)
-            this.setState({ playing: false })
-        else
-            this.setState({ playing: true })
+        if (playing) {
+            this.setState({playing: false})
+            console.log(this.state.flock)
+        } else {
+            this.setState({playing: true})
             requestAnimationFrame(this.updateAnimationState)
+        }
     }
 
     render() {
@@ -188,10 +211,10 @@ class Animation extends React.Component {
             <div id="canvas-container" onMouseDown={this.handleMouse}>
                 <svg id="flock-canvas" width={this.props.width} height={this.props.height} ref={this.canvasRef}>
                     {this.state.flock.map((agent) => <radialGradient key={agent.id} id={"gradient" + agent.id} fx={"25%"}>
-                        <stop offset="0%" style={{'stop-color':agent.color1,'stop-opacity':1}} />
-                        <stop offset="100%" style={{'stop-color':agent.color2,'stop-opacity':1}} />
+                        <stop offset="0%" style={{'stopColor':agent.color1,'stopOpacity':1}} />
+                        <stop offset="100%" style={{'stopColor':agent.color2,'stopOpacity':1}} />
                     </radialGradient>)}
-                    {this.state.flock.map((agent) => <path key={agent.id} d={agent.pathString} transform={agent.transformString}
+                    {this.state.flock.map((agent) => <path key={agent.id} id={"agent" + agent.id} d={agent.pathString} transform={agent.transformString}
                                                            stroke="black" strokeWidth={"1"}
                                                            fill={agent.gradientId}/>)}
                                                            {/*fill={agent.color1}/>)}*/}

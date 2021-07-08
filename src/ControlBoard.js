@@ -20,7 +20,8 @@ class ControlBoard extends React.Component {
                 avoidanceRadius: 50,
                 avoidanceWeight: .5,
                 cohesionRadius: 50,
-                cohesionWeight: .5
+                cohesionWeight: .5,
+                wiggle: .5
             },
 
             // not being used currently
@@ -63,6 +64,10 @@ class ControlBoard extends React.Component {
                 break;
             case 'cohesion-weight-slider':
                 flockParams.cohesionWeight = parseFloat(event.target.value)
+                this.setState({flockParams});
+                break;
+            case 'wiggle-slider':
+                flockParams.wiggle = parseFloat(event.target.value)
                 this.setState({flockParams});
                 break;
             default:
@@ -170,6 +175,12 @@ class ControlBoard extends React.Component {
                                onMouseEnter={(event) => this.updateDraggability(event, "flock-menu", false)}
                                onMouseLeave={(event) => this.updateDraggability(event, "flock-menu", true)}
                                onChange={this.updateFlockParams} />
+                       <p>Wiggle: {this.state.flockParams.wiggle}</p>
+                       <input type="range" min="0" max="1" step=".01" defaultValue={this.state.flockParams.wiggle}
+                               className="menu-slider" id="wiggle-slider"
+                               onMouseEnter={(event) => this.updateDraggability(event, "flock-menu", false)}
+                               onMouseLeave={(event) => this.updateDraggability(event, "flock-menu", true)}
+                               onChange={this.updateFlockParams} />
                     </div>
                 </div>
                 <Animation
@@ -181,6 +192,7 @@ class ControlBoard extends React.Component {
                     avoidanceWeight={this.state.flockParams.avoidanceWeight}
                     cohesionRadius={this.state.flockParams.cohesionRadius}
                     cohesionWeight={this.state.flockParams.cohesionWeight}
+                    wiggle={this.state.flockParams.wiggle}
                 />
             </div>
         )
