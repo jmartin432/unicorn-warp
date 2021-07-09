@@ -24,7 +24,6 @@ class App extends React.Component{
     }
 
     updateBoardDimensions = (event) => {
-        console.log(window.innerWidth, window.innerHeight)
         this.setState({ windowDims: {width: window.innerWidth, height: window.innerHeight }});
     }
 

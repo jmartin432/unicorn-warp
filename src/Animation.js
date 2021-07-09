@@ -8,10 +8,8 @@ class Animation extends React.Component {
         super(props);
         this.state = {
             flockSize: 100,
-            flock: this.createUnicorns(100),
+            flock: [],
             tick: 0,
-            playing: true,
-            wiggle: true
         }
         this.updateAnimationState = this.updateAnimationState.bind(this);
         this.handleMouse = this.handleMouse.bind(this);
@@ -21,10 +19,24 @@ class Animation extends React.Component {
     }
 
     componentDidMount() {
-        this.rAF = requestAnimationFrame(this.updateAnimationState);
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.started === false && this.props.started === true){
+            console.log('initialize flock and animation')
+            this.setState({flock: this.createUnicorns(this.state.flockSize), tick: 0, stopping: false})
+            requestAnimationFrame(this.updateAnimationState);
+        }
+        if (prevProps.started === true && this.props.started === false){
+            console.log('shutting down flock')
+        }
+        if (prevProps.playing === false && this.props.playing === true){
+            console.log('resuming play')
+            this.rAF = requestAnimationFrame(this.updateAnimationState);
+        }
+        if (prevProps.playing === true && this.props.playing === false){
+            console.log('pausing')
+        }
     }
 
     componentWillUnmount() {
@@ -42,7 +54,7 @@ class Animation extends React.Component {
             flock.push(new Unicorn(
                 i,
                 "m20,0l-20,10l-10,-10l10,-10l20,10",
-                2,
+                0,
                 new Vector(this.getRandomInt(0, this.props.width), this.getRandomInt(0, this.props.height)),
                 Vector.vectorFromAngle(randomAngle).round(5),
                 Vector.vectorFromAngle(randomAngle).round(5),
@@ -53,7 +65,6 @@ class Animation extends React.Component {
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
             ))
         }
-        console.log(flock[2])
         return flock
     }
 
@@ -63,6 +74,15 @@ class Animation extends React.Component {
         agent.alignNeighbors = []
         agent.avoidNeighbors = []
         agent.cohereNeighbors = []
+        return agent
+    }
+
+    async updateAge(agent) {
+        if (!this.props.started) {
+            agent.age += -4
+        } else {
+            agent.age = (agent.age < 100) ? agent.age + 2 : 100
+        }
         return agent
     }
 
@@ -158,6 +178,7 @@ class Animation extends React.Component {
         for (let i = 0; i < flock.length; i++) {
             if (flock[i].id % 10 === this.state.tick % 10) {
                 await this.resetAgent(flock[i])
+                .then (agent => this.updateAge(agent))
                 .then (agent => this.getNeighborsAndTargetVelocity(agent, flock))
                 .then (agent => this.checkBounds(agent))
                 .then (agent => this.updateAcceleration(agent))
@@ -176,7 +197,8 @@ class Animation extends React.Component {
                 })
             }
         }
-        return flock
+        //return flock
+        return flock.filter(agent => agent.age >= 0)
     }
 
     async cloneObject(object) {
@@ -192,23 +214,22 @@ class Animation extends React.Component {
             .then(flock => {
                 tick += 1
                 this.setState({flock: flock, tick: tick})
-                if (this.state.playing) {
+                if (this.props.playing) {
                     this.rAF = requestAnimationFrame(this.updateAnimationState)
                 } else {
+                    cancelAnimationFrame(this.rAF)
+                }
+                if (this.state.flock.length === 0) {
+                    console.log('flock is empty')
                     cancelAnimationFrame(this.rAF)
                 }
             })
     }
 
     handleMouse(event) {
-        let playing = this.state.playing
-        if (playing) {
-            this.setState({playing: false})
-            console.log(this.state.flock)
-        } else {
-            this.setState({playing: true})
-            requestAnimationFrame(this.updateAnimationState)
-        }
+        console.log(this.state.tick)
+        console.log(this.state.flock)
+        console.log(this.rAF)
     }
 
     render() {

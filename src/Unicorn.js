@@ -27,6 +27,14 @@ class Unicorn {
         return this._pathString
     }
 
+    get age() {
+        return this._age
+    }
+
+    set age(age) {
+        this._age = age
+    }
+
     get position() {
         return this._position
     }
@@ -104,7 +112,9 @@ class Unicorn {
     }
 
     get transformString() {
-        return "translate(" + this._position.x + "," + this._position.y + ")rotate(" + this.bearing + ")scale(" + this._scaleFactor + ")";
+        return "translate(" + this._position.x + "," + this._position.y +
+            ")rotate(" + this.bearing +
+            ")scale(" + ((this._age / 100) * this._scaleFactor) + ")";
     }
 
     get gradientId() {
