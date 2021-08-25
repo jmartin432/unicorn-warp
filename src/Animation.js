@@ -77,7 +77,6 @@ class Animation extends React.Component {
         agent.avoidNeighbors = []
         agent.cohereNeighbors = []
         this.props.spatialGrid.removeFromCell(agent)
-        // get new key and add to bin
         agent.gridKey = this.props.spatialGrid.getKey(agent.position, window.innerWidth, window.innerHeight)
         this.props.spatialGrid.addToCell(agent)
         return agent
@@ -139,8 +138,11 @@ class Animation extends React.Component {
             let cellNeighbors = this.props.spatialGrid.getCellEntities(localCells[i])
             for (let j = 0; j < cellNeighbors.length; j++) {
                 let neighborIndex = cellNeighbors[j]
+        //        the for loop below is for doing a naive neighbor search without spatial grid
         // for (let i = 0; i < flock.length; i++) {
+        //         let neighborIndex = i
                 if (agent.id === neighborIndex) continue
+                if (!flock[neighborIndex]) continue
                 // get alignment vectors (these are neighbor velocities)
                 if (Vector.distanceSquared(agent.position, flock[neighborIndex].position) < alignRadiusSqrd) {
                     agent.alignNeighbors.push(flock[neighborIndex])
@@ -235,7 +237,6 @@ class Animation extends React.Component {
                 })
             }
         }
-        //return flock
         return flock.filter(agent => agent.age >= 0)
     }
 
@@ -244,9 +245,6 @@ class Animation extends React.Component {
     }
 
     async updateAnimationState() {
-        // console.log(this.props.spatialGrid)
-        // console.log(this.state.flock)
-        // alert()
         let tick = this.state.tick
         await this.cloneObject(this.state.flock)
             .then(flock => {
@@ -268,48 +266,20 @@ class Animation extends React.Component {
     }
 
     handleMouse(event) {
-        console.log(this.state.tick)
-        console.log(this.state.flock)
-        if (this.state.flock.length > 0) {
-            console.log(this.state.flock[0].gridKey)
-        }
-        console.log(this.props.spatialGrid)
-        console.log(this.rAF)
+        // uncomment to get flock info on mouse click
+        // console.log(this.state.tick)
+        // console.log(this.state.flock)
+        // if (this.state.flock.length > 0) {
+        //     console.log(this.state.flock[0].gridKey)
+        // }
+        // console.log(this.props.spatialGrid)
+        // console.log(this.rAF)
     }
 
     render() {
         return (
             <div id="canvas-container" onMouseDown={this.handleMouse}>
                 <svg id="flock-canvas" width={this.props.width} height={this.props.height} ref={this.canvasRef}>
-                    {[...Array(this.props.spatialGrid.rows).keys()].map((i) =>
-                        <line className={"grid-line"}
-                              key={"h" + i}
-                              x1={"0"}
-                              y1={i * window.innerHeight / this.props.spatialGrid.rows}
-                              x2={window.innerWidth}
-                              y2={i *  window.innerHeight/ this.props.spatialGrid.rows}
-                              stroke={"white"}
-                              strokeWidth={2}
-                        />)}
-                    {[...Array(this.props.spatialGrid.columns).keys()].map((i) =>
-                        <line className={"grid-line"}
-                              key={"v" + i}
-                              x1={i * window.innerWidth / this.props.spatialGrid.columns}
-                              y1={"0"}
-                              x2={i * window.innerWidth / this.props.spatialGrid.columns}
-                              y2={window.innerHeight}
-                              stroke={"white"}
-                              strokeWidth={2}
-                        />)}
-                    {this.state.flock.length > 0 && <circle
-                        cx={this.state.flock[0].position.x}
-                        cy={this.state.flock[0].position.y}
-                        r={Math.max(this.props.alignmentRadius, this.props.avoidanceRadius, this.props.cohesionRadius)}
-                        stroke="white"
-                        strokeWidth="1"
-                        fill="white"
-                        opacity={"0.3"}/>
-                    }
                     {this.state.flock.map((agent) => <radialGradient key={agent.id} id={"gradient" + agent.id} fx={"25%"}>
                         <stop offset={"0%"} style={{'stopColor':agent.color1,'stopOpacity':1}} />
                         <stop offset={"100%"} style={{'stopColor':agent.color2,'stopOpacity':1}} />
@@ -318,8 +288,37 @@ class Animation extends React.Component {
                     {this.state.flock.map((agent) => <path key={agent.id} id={"agent" + agent.id} d={agent.pathString} transform={agent.transformString}
                                                            stroke={"black"} strokeWidth="1"
                                                            fill={agent.gradientId}/>)}
-                                                           {/*fill={agent.color1}/>)}*/}
-                                                           {/*fill={agent.color} fillOpacity={"1"}/>)}*/}
+
+                    {/*The stuff below is for visualizing spatial grid lines and neighbor radii*/}
+                    {/*{[...Array(this.props.spatialGrid.rows).keys()].map((i) =>*/}
+                    {/*    <line className={"grid-line"}*/}
+                    {/*          key={"h" + i}*/}
+                    {/*          x1={"0"}*/}
+                    {/*          y1={i * window.innerHeight / this.props.spatialGrid.rows}*/}
+                    {/*          x2={window.innerWidth}*/}
+                    {/*          y2={i *  window.innerHeight/ this.props.spatialGrid.rows}*/}
+                    {/*          stroke={"white"}*/}
+                    {/*          strokeWidth={2}*/}
+                    {/*    />)}*/}
+                    {/*{[...Array(this.props.spatialGrid.columns).keys()].map((i) =>*/}
+                    {/*    <line className={"grid-line"}*/}
+                    {/*          key={"v" + i}*/}
+                    {/*          x1={i * window.innerWidth / this.props.spatialGrid.columns}*/}
+                    {/*          y1={"0"}*/}
+                    {/*          x2={i * window.innerWidth / this.props.spatialGrid.columns}*/}
+                    {/*          y2={window.innerHeight}*/}
+                    {/*          stroke={"white"}*/}
+                    {/*          strokeWidth={2}*/}
+                    {/*    />)}*/}
+                    {/*{this.state.flock.length > 0 && <circle*/}
+                    {/*    cx={this.state.flock[0].position.x}*/}
+                    {/*    cy={this.state.flock[0].position.y}*/}
+                    {/*    r={Math.max(this.props.alignmentRadius, this.props.avoidanceRadius, this.props.cohesionRadius)}*/}
+                    {/*    stroke="white"*/}
+                    {/*    strokeWidth="1"*/}
+                    {/*    fill="white"*/}
+                    {/*    opacity={"0.3"}/>*/}
+                    {/*}*/}
                 </svg>
             </div>
         )
