@@ -7,13 +7,13 @@ class Animation extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            flockSize: 100,
+            flockSize: 200,
             flock: [],
             tick: 0,
         }
         this.updateAnimationState = this.updateAnimationState.bind(this);
         this.handleMouse = this.handleMouse.bind(this);
-        this.checkBounds = this.checkBounds.bind(this);
+        this.outOfBounds = this.outOfBounds.bind(this);
         this.cloneObject = this.cloneObject.bind(this);
         this.createUnicorns = this.createUnicorns.bind(this);
     }
@@ -92,33 +92,74 @@ class Animation extends React.Component {
         return agent
     }
 
+    outOfBounds(agent) {
+        return (agent.position.x < 0 || agent.position.x > window.innerWidth ||
+        agent.position.y < 0 || agent.position.y > window.innerHeight)
+    }
+
     async getNeighborsAndTargetVelocity(agent, flock) {
+        if (this.outOfBounds(agent)) {
+            // if (agent.id === 0) {
+            //     console.log('agent 0 position ', agent.position)
+            //     alert('agent 0 out of bounds ')
+            // }
+            agent.targetVelocity = new Vector(0,0)
+            if (agent.position.x < 0) {
+                agent.targetVelocity.add(new Vector(1,0))
+            }
+            if (agent.position.x > window.innerWidth) {
+                agent.targetVelocity.add(new Vector(-1,0))
+            }
+            if (agent.position.y < 0) {
+                agent.targetVelocity.add(new Vector(0,1))
+            }
+            if (agent.position.y > window.innerHeight) {
+                agent.targetVelocity.add(new Vector(0,-1))
+            }
+            agent.targetVelocity.normalize()
+            // if (agent.id === 0) {
+            //     console.log('agent 0 velocity ', agent.targetVelocity)
+            //     alert('agent 0 new velocity ')
+            // }
+            return agent
+        }
+        let largestRadius = Math.max(this.props.alignmentRadius, this.props.avoidanceRadius, this.props.cohesionRadius)
+        let localCells = this.props.spatialGrid.getLocalCells(agent.position, largestRadius, window.innerWidth, window.innerHeight)
+        // if (agent.id === 0) {
+        //     console.log('agent 0 local grids ', localCells )
+        //     alert('updating agent 0 new velocity ')
+        // }
         let alignRadiusSqrd = this.props.alignmentRadius * this.props.alignmentRadius
         let avoidRadiusSqrd = this.props.avoidanceRadius * this.props.avoidanceRadius
         let cohereRadiusSqrd = this.props.cohesionRadius * this.props.cohesionRadius
         let neighborVelocities = []
         let avoidVectors = []
         let neighborPositions = []
-        for (let i = 0; i < flock.length; i++) {
-            if (agent.id === i) continue
-            // get alignment vectors (these are neighbor velocities)
-            if (Vector.distanceSquared(agent.position, flock[i].position) < alignRadiusSqrd) {
-                agent.alignNeighbors.push(flock[i])
-                neighborVelocities.push(flock[i].velocity)
-            }
+        for (let i = 0; i < localCells.length; i++) {
+            let cellNeighbors = this.props.spatialGrid.getCellEntities(localCells[i])
+            for (let j = 0; j < cellNeighbors.length; j++) {
+                let neighborIndex = cellNeighbors[j]
+        // for (let i = 0; i < flock.length; i++) {
+                if (agent.id === neighborIndex) continue
+                // get alignment vectors (these are neighbor velocities)
+                if (Vector.distanceSquared(agent.position, flock[neighborIndex].position) < alignRadiusSqrd) {
+                    agent.alignNeighbors.push(flock[neighborIndex])
+                    neighborVelocities.push(flock[neighborIndex].velocity)
+                }
 
-            // get avoid vectors (the difference between avoid radius and neighbor position)
-            if (Vector.distanceSquared(agent.position, flock[i].position) < avoidRadiusSqrd) {
-                agent.avoidNeighbors.push(flock[i])
-                let vectorToNeighbor = Vector.difference(flock[i].position, agent.position)
-                let vectorToRadius = vectorToNeighbor.copy().lengthen(this.props.avoidanceRadius)
-                let avoidVector = Vector.difference(vectorToNeighbor, vectorToRadius)
-                avoidVectors.push(avoidVector)
-            }
-            // get cohere vectors (these are neighbor positions)
-            if (Vector.distanceSquared(agent.position, flock[i].position) < cohereRadiusSqrd) {
-                agent.cohereNeighbors.push(flock[i])
-                neighborPositions.push(flock[i].position)
+                // get avoid vectors (the difference between avoid radius and neighbor position)
+                if (Vector.distanceSquared(agent.position, flock[neighborIndex].position) < avoidRadiusSqrd) {
+                    agent.avoidNeighbors.push(flock[i])
+                    let vectorToNeighbor = Vector.difference(flock[neighborIndex].position, agent.position)
+                    let vectorToRadius = vectorToNeighbor.copy().lengthen(this.props.avoidanceRadius)
+                    let avoidVector = Vector.difference(vectorToNeighbor, vectorToRadius)
+                    avoidVectors.push(avoidVector)
+                }
+                // get cohere vectors (these are neighbor positions)
+                if (Vector.distanceSquared(agent.position, flock[neighborIndex].position) < cohereRadiusSqrd) {
+                    agent.cohereNeighbors.push(flock[neighborIndex])
+                    neighborPositions.push(flock[neighborIndex].position)
+                }
             }
         }
 
@@ -157,14 +198,6 @@ class Animation extends React.Component {
         return agent
     }
 
-    async checkBounds(agent) {
-        if (agent.position.x + agent.targetVelocity.x < 0 && agent.targetVelocity.x < 0) agent.targetVelocity.x *= -1
-        if (agent.position.x + agent.targetVelocity.x > this.props.width && agent.targetVelocity.x > 0) agent.targetVelocity.x *= -1
-        if (agent.position.y + agent.targetVelocity.y < 0 && agent.targetVelocity.y < 0) agent.targetVelocity.y *= -1
-        if (agent.position.y + agent.targetVelocity.y > this.props.height && agent.targetVelocity.y > 0) agent.targetVelocity.y *= -1
-        return agent
-    }
-
     async updateAcceleration(agent) {
         agent.acceleration = Vector.difference(agent.targetVelocity, agent.velocity).scaleBy(.1).round(5)
         return agent
@@ -186,7 +219,6 @@ class Animation extends React.Component {
                 await this.resetAgent(flock[i])
                 .then (agent => this.updateAge(agent))
                 .then (agent => this.getNeighborsAndTargetVelocity(agent, flock))
-                .then (agent => this.checkBounds(agent))
                 .then (agent => this.updateAcceleration(agent))
                 .then (agent => this.updateVelocity(agent))
                 .then (agent => this.updatePosition(agent))
@@ -249,12 +281,42 @@ class Animation extends React.Component {
         return (
             <div id="canvas-container" onMouseDown={this.handleMouse}>
                 <svg id="flock-canvas" width={this.props.width} height={this.props.height} ref={this.canvasRef}>
+                    {[...Array(this.props.spatialGrid.rows).keys()].map((i) =>
+                        <line className={"grid-line"}
+                              key={"h" + i}
+                              x1={"0"}
+                              y1={i * window.innerHeight / this.props.spatialGrid.rows}
+                              x2={window.innerWidth}
+                              y2={i *  window.innerHeight/ this.props.spatialGrid.rows}
+                              stroke={"white"}
+                              strokeWidth={2}
+                        />)}
+                    {[...Array(this.props.spatialGrid.columns).keys()].map((i) =>
+                        <line className={"grid-line"}
+                              key={"v" + i}
+                              x1={i * window.innerWidth / this.props.spatialGrid.columns}
+                              y1={"0"}
+                              x2={i * window.innerWidth / this.props.spatialGrid.columns}
+                              y2={window.innerHeight}
+                              stroke={"white"}
+                              strokeWidth={2}
+                        />)}
+                    {this.state.flock.length > 0 && <circle
+                        cx={this.state.flock[0].position.x}
+                        cy={this.state.flock[0].position.y}
+                        r={Math.max(this.props.alignmentRadius, this.props.avoidanceRadius, this.props.cohesionRadius)}
+                        stroke="white"
+                        strokeWidth="1"
+                        fill="white"
+                        opacity={"0.3"}/>
+                    }
                     {this.state.flock.map((agent) => <radialGradient key={agent.id} id={"gradient" + agent.id} fx={"25%"}>
-                        <stop offset="0%" style={{'stopColor':agent.color1,'stopOpacity':1}} />
-                        <stop offset="100%" style={{'stopColor':agent.color2,'stopOpacity':1}} />
-                    </radialGradient>)}
+                        <stop offset={"0%"} style={{'stopColor':agent.color1,'stopOpacity':1}} />
+                        <stop offset={"100%"} style={{'stopColor':agent.color2,'stopOpacity':1}} />
+                    </radialGradient>)
+                    }
                     {this.state.flock.map((agent) => <path key={agent.id} id={"agent" + agent.id} d={agent.pathString} transform={agent.transformString}
-                                                           stroke="black" strokeWidth={"1"}
+                                                           stroke={"black"} strokeWidth="1"
                                                            fill={agent.gradientId}/>)}
                                                            {/*fill={agent.color1}/>)}*/}
                                                            {/*fill={agent.color} fillOpacity={"1"}/>)}*/}
