@@ -1,13 +1,15 @@
 import Vector from './Vector'
 class Unicorn {
 
-    constructor(id, pathString, age, position, velocity, targetVelocity, acceleration, scaleFactor, speedFactor, color1, color2) {
+    constructor(id, pathString, age, position, velocity, targetVelocity,
+                acceleration, scaleFactor, speedFactor, color1, color2,
+                gridKey) {
         this._id = id;
         this._pathString = pathString;
         this._age = age;
         this._position = position;
         this._velocity = velocity;
-        this._targetVelocity = targetVelocity
+        this._targetVelocity = targetVelocity;
         this._acceleration = new Vector(0, 0)
         this._scaleFactor = scaleFactor;
         this._speedFactor = speedFactor;
@@ -15,8 +17,8 @@ class Unicorn {
         this._color2 = color2;
         this._alignNeighbors = [];
         this._avoidNeighbors = [];
-        this._cohereNeighbors = []
-
+        this._cohereNeighbors = [];
+        this._gridKey = gridKey;
     }
 
     get id() {
@@ -25,6 +27,14 @@ class Unicorn {
 
     get pathString() {
         return this._pathString
+    }
+
+    get gridKey() {
+        return this._gridKey
+    }
+
+    set gridKey(gridKey) {
+        this._gridKey = gridKey;
     }
 
     get age() {

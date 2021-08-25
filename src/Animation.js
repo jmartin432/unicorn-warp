@@ -50,19 +50,21 @@ class Animation extends React.Component {
     createUnicorns(size) {
         let flock = []
         for (let i = 0; i < size; i++) {
+            let position = new Vector(this.getRandomInt(0, this.props.width), this.getRandomInt(0, this.props.height))
             let randomAngle = this.getRandomInt(0,360)
             flock.push(new Unicorn(
                 i,
                 "m20,0l-20,10l-10,-10l10,-10l20,10",
                 0,
-                new Vector(this.getRandomInt(0, this.props.width), this.getRandomInt(0, this.props.height)),
+                position,
                 Vector.vectorFromAngle(randomAngle).round(5),
                 Vector.vectorFromAngle(randomAngle).round(5),
                 new Vector(0, 0),
                 this.getRandomInt(700, 300) / 1000,
                 this.getRandomInt(700, 300) / 1000,
                 '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0'),
-                '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0')
+                '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0'),
+                this.props.spatialGrid.getKey(position, window.innerWidth, window.innerHeight)
             ))
         }
         return flock
@@ -74,6 +76,10 @@ class Animation extends React.Component {
         agent.alignNeighbors = []
         agent.avoidNeighbors = []
         agent.cohereNeighbors = []
+        this.props.spatialGrid.removeFromCell(agent)
+        // get new key and add to bin
+        agent.gridKey = this.props.spatialGrid.getKey(agent.position, window.innerWidth, window.innerHeight)
+        this.props.spatialGrid.addToCell(agent)
         return agent
     }
 
@@ -206,6 +212,9 @@ class Animation extends React.Component {
     }
 
     async updateAnimationState() {
+        // console.log(this.props.spatialGrid)
+        // console.log(this.state.flock)
+        // alert()
         let tick = this.state.tick
         await this.cloneObject(this.state.flock)
             .then(flock => {
@@ -229,6 +238,10 @@ class Animation extends React.Component {
     handleMouse(event) {
         console.log(this.state.tick)
         console.log(this.state.flock)
+        if (this.state.flock.length > 0) {
+            console.log(this.state.flock[0].gridKey)
+        }
+        console.log(this.props.spatialGrid)
         console.log(this.rAF)
     }
 

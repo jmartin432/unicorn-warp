@@ -1,6 +1,7 @@
 import React from 'react';
 import './ControlBoard.css';
 import Animation from "./Animation";
+import SpatialGrid from './SpatialGrid'
 // import crabNebula from "./static/crabNebula.jpg";
 // import helixNebula from "./static/helixNebula.jpg";
 // import lagoonNebula from "./static/lagoonNebula.jpg";
@@ -16,6 +17,8 @@ class ControlBoard extends React.Component {
         this.handlePlayPause = this.handlePlayPause.bind(this)
         this.dropMenu = this.dropMenu.bind(this)
         this.state = {
+            //spatialGrid: new SpatialGrid(10, 10, this.props.width, this.props.height),
+            spatialGrid: new SpatialGrid(10, 10),
             flockParams: {
                 alignmentRadius: 50,
                 alignmentWeight: .5,
@@ -35,6 +38,7 @@ class ControlBoard extends React.Component {
     }
 
     componentDidMount() {
+        console.log('rendering control board')
     }
 
     componentDidUpdate (prevProps, prevState, snapshot) {
@@ -207,6 +211,9 @@ class ControlBoard extends React.Component {
                 <Animation
                     width={this.props.width}
                     height={this.props.height}
+                    binWidth={this.props.width / 10.0}
+                    binHeight={this.props.height / 10.0}
+                    spatialGrid={this.state.spatialGrid}
                     alignmentRadius={this.state.flockParams.alignmentRadius}
                     alignmentWeight={this.state.flockParams.alignmentWeight}
                     avoidanceRadius={this.state.flockParams.avoidanceRadius}

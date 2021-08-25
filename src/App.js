@@ -16,6 +16,7 @@ class App extends React.Component{
     }
 
     componentDidMount () {
+        console.log('rendering app')
         window.addEventListener('resize', this.updateBoardDimensions);
         this.updateBoardDimensions();
     }
